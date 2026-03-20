@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WhatsApp Server</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #121212;
+      color: #ffffff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px #00ff88;
+    }
+    h2 {
+      text-align: center;
+      color: #00ff88;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #ccc;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: none;
+      background: #2c2c2c;
+      color: white;
+    }
+    input[type="file"] {
+      padding: 5px;
+    }
+    button {
+      width: 48%;
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      color: white;
+    }
+    .start {
+      background: #00c853;
+    }
+    .stop {
+      background: #d50000;
+      float: right;
+    }
+    .status {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    img {
+      display: block;
+      margin: 10px auto;
+      max-width: 200px;
+    }
+    #logBox {
+      background: #000;
+      padding: 10px;
+      margin-top: 20px;
+      border-radius: 10px;
+      height: 150px;
+      overflow-y: auto;
+      font-size: 12px;
+      color: #0f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>💬 WhatsApp Server</h2>
+
+    <label>Receiver Number(s) or Group ID(s) (comma-separated)</label>
+    <input type="text" id="receiver" placeholder="Ex: 9199xxxxxxx,9188xxxxxxx,group@g.us" />
+
+    <label>Name (for personalization)</label>
+    <input type="text" id="name" placeholder="Ex: HATER" />
+
+    <label>Delay Between Messages (in seconds)</label>
+    <input type="number" id="delay" placeholder="Default: 2" />
+
+    <label>Upload .txt File (One line = One Message)</label>
+    <input type="file" id="file" accept=".txt" />
+
+    <button class="start" onclick="start()">▶️ Start</button>
+    <button class="stop" onclick="stop()">⏹️ Stop</button>
+
+    <div class="status" id="status">Status: Idle</div>
+    <img id="qr" />
+
+    <div id="logBox">
+      <b>📜 Live Logs:</b>
+      <div id="logs"></div>
+    </div>
+  </div>
+
+  <script>
+    let logInterval = null;
+
+    async function getQR() {
+      const res = await fetch('/api/qr');
+      const data = await res.json();
+      if (data.qr) {
+        document.getElementById("qr").src = data.qr;
+        document.getElementById("status").innerText = "Scan QR to connect";
+      } else {
+        document.getElementById("qr").style.display = "none";
+        document.getElementById("status").innerText = data.message;
+      }
+    }
+
+    async function start() {
+      const receiver = document.getElementById('receiver').value.trim();
+      const name = document.getElementById('name').value.trim();
+      const delay = document.getElementById('delay').value.trim();
+      const file = document.getElementById('file').files[0];
+
+      if (!receiver || !file) {
+        alert('Receiver and File are required');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('receiver', receiver); // Will be comma-separated string
+      formData.append('name', name);
+      formData.append('delay', delay);
+      formData.append('file', file);
+
+      document.getElementById('status').innerText = '⏳ Sending...';
+
+      // ✅ Clear previous logs
+      document.getElementById('logs').innerHTML = '';
+
+      const res = await fetch('/api/start', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      document.getElementById('status').innerText = data.message || '✅ Started';
+
+      // ✅ Start live logs
+      if (logInterval) clearInterval(logInterval);
+      logInterval = setInterval(loadLogs, 2000);
+    }
+
+    async function stop() {
+      const res = await fetch('/api/stop', { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('status').innerText = data.message || '🛑 Stopped';
+
+      // ✅ Stop log fetching
+      if (logInterval) {
+        clearInterval(logInterval);
+        logInterval = null;
+      }
+    }
+
+    async function loadLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        const logDiv = document.getElementById('logs');
+        logDiv.innerHTML = data.logs.map(l => `<div>${l}</div>`).join('');
+        logDiv.scrollTop = logDiv.scrollHeight;
+      } catch (e) {
+        console.log("Log fetch error");
+      }
+    }
+
+    window.onload = () => {
+      getQR(); // Load QR on start
+    };
+  </script>
+</body>
+</html>
