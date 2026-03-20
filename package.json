@@ -1,0 +1,51 @@
+{
+
+  "name": "whatsapp-multi-target-bot",
+
+  "version": "9.0.0",
+
+  "description": "WhatsApp Multi Target Bot with Group Extractor, Pairing Code, SSE Logs",
+
+  "main": "server.js",
+
+  "type": "module",
+
+  "scripts": {
+
+    "start": "node server.js",
+
+    "dev": "node server.js"
+
+  },
+
+  "keywords": [
+
+    "whatsapp",
+
+    "baileys",
+
+    "bot",
+
+    "group-extractor",
+
+    "whatsapp-bot",
+
+    "express"
+
+  ],
+
+  "author": "Ayush Tiwari",
+
+  "license": "MIT",
+
+  "dependencies": {
+
+    "@whiskeysockets/baileys": "^6.7.9",
+
+    "express": "^4.19.2",
+
+    "pino": "^8.19.0"
+
+  }
+
+}
